@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>HeartVibe AI | Romantic Website Generator</title>
+    <!-- Google Fonts & Tailwind + Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        /* custom animations & glowing effects */
+        @keyframes floatHeart {
+            0% { transform: translateY(0) scale(1); opacity: 0.7; }
+            100% { transform: translateY(-120vh) scale(0.5); opacity: 0; }
+        }
+        @keyframes textReveal {
+            0% { opacity: 0; transform: translateY(20px); filter: blur(6px);}
+            100% { opacity: 1; transform: translateY(0); filter: blur(0);}
+        }
+        @keyframes gentleGlow {
+            0% { box-shadow: 0 0 5px rgba(255,105,180,0.3), 0 0 10px rgba(255,105,180,0.2);}
+            100% { box-shadow: 0 0 20px rgba(255,105,180,0.6), 0 0 30px rgba(255,80,120,0.4);}
+        }
+        .animate-text-reveal {
+            animation: textReveal 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+        }
+        .glow-card {
+            animation: gentleGlow 2s infinite alternate ease-in-out;
+        }
+        .floating-heart {
+            position: fixed;
+            bottom: -20px;
+            pointer-events: none;
+            z-index: 15;
+            font-size: 1.6rem;
+            opacity: 0;
+            animation: floatHeart 6s linear forwards;
+        }
+        .transition-smooth {
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.4, 1);
+        }
+        .glass-card {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255,255,240,0.4);
+            border-radius: 32px;
+        }
+        .preview-scroll {
+            scrollbar-width: thin;
+        }
+        /* theme overrides */
+        .bg-theme-soft { background: linear-gradient(145deg, #ffe4ec, #ffd9e8); }
+        .bg-theme-luxury { background: radial-gradient(circle at 10% 30%, #2b1a2f, #1a0f1c); }
+        .bg-theme-anime { background: linear-gradient(125deg, #fbc7d1, #f5a6b9, #fff0f5); background-size: 200% 200%; animation: waveBg 5s ease infinite; }
+        @keyframes waveBg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .bg-theme-minimal { background: #fef8f5; }
+        .bg-theme-cinematic { background: radial-gradient(ellipse at top, #2c1e2c, #0c0b13); }
+        
+        .card-theme-soft { background: rgba(255,245,250,0.85); backdrop-filter: blur(4px); border-radius: 2rem; border: 1px solid #ffb7c5; box-shadow: 0 20px 35px -12px rgba(255,80,120,0.2); }
+        .card-theme-luxury { background: rgba(20, 12, 28, 0.8); backdrop-filter: blur(8px); border: 1px solid #d4af6c; box-shadow: 0 0 20px rgba(212,175,108,0.4); border-radius: 2rem; }
+        .card-theme-anime { background: rgba(255,240,245,0.9); border-radius: 2rem; border: 2px solid #ffa5c0; box-shadow: 0 10px 25px -5px #ff809f; }
+        .card-theme-minimal { background: white; border-radius: 1.5rem; box-shadow: 0 12px 30px rgba(0,0,0,0.05); border: 1px solid #ffe0e0; }
+        .card-theme-cinematic { background: rgba(10, 8, 20, 0.7); backdrop-filter: blur(10px); border-radius: 2rem; border-left: 3px solid #ff4d6d; border-right: 1px solid #ff6f91; box-shadow: 0 0 28px rgba(255, 77, 109, 0.3); color: #f8e3e8; }
+        
+        .text-luxury { color: #f3e3c9; text-shadow: 0 0 5px #b68b40; }
+        .text-cinematic { color: #ffdfe6; }
+        .heart-icon-glow { filter: drop-shadow(0 0 5px #ff2e6e); }
+        button:active { transform: scale(0.97); }
+        .photo-grid img { transition: transform 0.2s ease; object-fit: cover; }
+        .photo-grid img:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden relative">
+    <div id="root"></div>
+
+    <!-- React & ReactDOM & Babel -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        // --- Floating Hearts Manager Component (animated background)
+        const FloatingHearts = () => {
+            React.useEffect(() => {
+                const container = document.body;
+                const createHeart = () => {
+                    const heartDiv = document.createElement('div');
+                    heartDiv.className = 'floating-heart';
+                    const heartsArray = ['❤️', '🩷', '❤️‍🔥', '💖', '💗', '🌸'];
+                    heartDiv.innerHTML = heartsArray[Math.floor(Math.random() * heartsArray.length)];
+                    heartDiv.style.left = Math.random() * 100 + '%';
+                    heartDiv.style.fontSize = (Math.random() * 1.5 + 1) + 'rem';
+                    heartDiv.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                    heartDiv.style.opacity = Math.random() * 0.8 + 0.3;
+                    container.appendChild(heartDiv);
+                    setTimeout(() => heartDiv.remove(), 6000);
+                };
+                const interval = setInterval(createHeart, 700);
+                return () => clearInterval(interval);
+            }, []);
+            return null;
+        };
+
+        // AI Romantic Message Generator (simulated intelligence)
+        const generateAIMessage = ({ myName, partnerName, anniversary, memories }) => {
+            const currentYear = new Date().getFullYear();
+            const anniDate = anniversary ? new Date(anniversary) : null;
+            const yearsTogether = anniDate ? Math.max(1, currentYear - anniDate.getFullYear()) : 1;
+            const memoryText = memories.trim() || "the little moments we share, the laughter and quiet glances";
+            
+            const templates = [
+                `My dearest ${partnerName}, every sunrise reminds me of your warmth. From the day we met, you painted my world with endless love. Thinking about ${memoryText} fills my heart with gratitude. Happy ${yearsTogether} magical years, my love. You are my always.`,
+                `To my ${myName}’s beloved ${partnerName}, you are the poetry my soul never knew it needed. Each memory — ${memoryText} — plays like a sweet melody. Our anniversary (${anniversary || "the day our stars aligned"}) is a sacred constellation. I love you beyond galaxies.`,
+                `${partnerName}, my heart whispers your name in every breeze. Every laugh, every hug, even ${memoryText.slice(0, 70)}... you turned my world into a garden. Forever isn’t long enough with you. Yours eternally, ${myName}.`
+            ];
+            const chosen = templates[Math.floor(Math.random() * templates.length)];
+            return chosen;
+        };
+
+        // Main App Component
+        const App = () => {
+            // Form states
+            const [myName, setMyName] = React.useState("Ethan");
+            const [partnerName, setPartnerName] = React.useState("Sofia");
+            const [message, setMessage] = React.useState("Every moment with you feels like a dream. You're my greatest adventure, my safe harbor, and my forever love. ✨");
+            const [anniversary, setAnniversary] = React.useState("2023-06-15");
+            const [memories, setMemories] = React.useState("Our first trip to the mountains, candlelight dinners, and the way you smile when you're sleepy.");
+            const [selectedTheme, setSelectedTheme] = React.useState("softCute");
+            const [photos, setPhotos] = React.useState([]);
+            // UI states for modal & upgrade
+            const [showAuthModal, setShowAuthModal] = React.useState(false);
+            const [premiumGlow, setPremiumGlow] = React.useState(false);
+            
+            // File upload handler
+            const handlePhotoUpload = (e) => {
+                const files = Array.from(e.target.files);
+                const newPhotos = [];
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            newPhotos.push(ev.target.result);
+                            if (newPhotos.length === files.filter(f => f.type.startsWith('image/')).length) {
+                                setPhotos(prev => [...prev, ...newPhotos].slice(0, 6)); // max 6 photos
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            };
+            
+            const removePhoto = (index) => {
+                setPhotos(photos.filter((_, i) => i !== index));
+            };
+            
+            const triggerAIGeneration = () => {
+                const aiMsg = generateAIMessage({ myName, partnerName, anniversary, memories });
+                setMessage(aiMsg);
+                // add a small haptic simulation
+            };
+            
+            // One-click website generation + celebration
+            const oneClickGenerate = () => {
+                // scroll to preview + extra glowing
+                const previewEl = document.getElementById('livePreviewSection');
+                if (previewEl) previewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setPremiumGlow(true);
+                setTimeout(() => setPremiumGlow(false), 1000);
+                // also force tiny heartbeat animation via class
+            };
+            
+            // Theme configurations (bg, card style, text themes)
+            const getThemeClasses = () => {
+                switch(selectedTheme) {
+                    case 'softCute': return { bg: 'bg-theme-soft', card: 'card-theme-soft', textColor: 'text-rose-800', accent: 'bg-pink-400', heartColor: 'text-pink-500' };
+                    case 'luxury': return { bg: 'bg-theme-luxury', card: 'card-theme-luxury', textColor: 'text-luxury', accent: 'bg-amber-600', heartColor: 'text-amber-300' };
+                    case 'anime': return { bg: 'bg-theme-anime', card: 'card-theme-anime', textColor: 'text-rose-700', accent: 'bg-pink-500', heartColor: 'text-red-400' };
+                    case 'minimal': return { bg: 'bg-theme-minimal', card: 'card-theme-minimal', textColor: 'text-stone-700', accent: 'bg-rose-300', heartColor: 'text-rose-400' };
+                    case 'cinematic': return { bg: 'bg-theme-cinematic', card: 'card-theme-cinematic', textColor: 'text-cinematic', accent: 'bg-red-500', heartColor: 'text-red-300' };
+                    default: return { bg: 'bg-theme-soft', card: 'card-theme-soft', textColor: 'text-rose-800', accent: 'bg-pink-400', heartColor: 'text-pink-500' };
+                }
+            };
+            
+            const themeStyle = getThemeClasses();
+            
+            // Real-time preview component (live love letter website)
+            const LovePreview = () => {
+                return (
+                    <div className={`rounded-3xl p-6 transition-all duration-500 ${themeStyle.bg} relative overflow-hidden shadow-2xl border border-white/20`} style={{ minHeight: '480px' }}>
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute top-4 right-4 text-4xl opacity-20 animate-pulse">❤️</div>
+                        </div>
+                        <div className={`relative z-2 p-5 md:p-6 ${themeStyle.card} transition-all duration-500 transform-gpu`}>
+                            {/* animated text reveal on each update with key */}
+                            <div key={message + selectedTheme + photos.length} className="animate-text-reveal">
+                                <div className="flex justify-between items-start flex-wrap gap-2">
+                                    <h2 className={`text-3xl md:text-4xl font-bold ${themeStyle.textColor} flex items-center gap-2`}>
+                                        {myName} <i className="fas fa-heart text-sm mx-1"></i> {partnerName}
+                                    </h2>
+                                    {anniversary && <span className={`text-sm px-3 py-1 rounded-full ${themeStyle.accent} bg-opacity-30 backdrop-blur-sm font-medium`}>✨ {anniversary}</span>}
+                                </div>
+                                
+                                {photos.length > 0 && (
+                                    <div className="photo-grid grid grid-cols-2 md:grid-cols-3 gap-3 my-5">
+                                        {photos.slice(0,4).map((src, idx) => (
+                                            <img key={idx} src={src} alt="memory" className="w-full h-28 md:h-32 rounded-2xl object-cover shadow-md border-2 border-white/50" />
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                <div className="my-5 italic text-pretty">
+                                    <p className={`text-lg leading-relaxed ${themeStyle.textColor} font-medium`}>📖 {message}</p>
+                                </div>
+                                
+                                {memories && (
+                                    <div className={`mt-4 p-4 rounded-xl bg-white/20 backdrop-blur-sm border-l-4 ${themeStyle.accent} border-opacity-60`}>
+                                        <p className="text-sm font-semibold flex items-center gap-2"><i className="fas fa-camera-retro"></i> Precious memories:</p>
+                                        <p className={`text-base ${themeStyle.textColor}`}>✨ {memories}</p>
+                                    </div>
+                                )}
+                                <div className="mt-6 flex justify-between items-center text-xs opacity-80 pt-2 border-t border-white/30">
+                                    <span>❤️ Forever & Always</span>
+                                    <span className="flex gap-1"><i className="fas fa-music"></i> romantic vibes</span>
+                                </div>
+                            </div>
+                        </div>
+                        {/* floating mini hearts in preview */}
+                        <div className="absolute bottom-2 right-2 text-2xl opacity-30 animate-pulse">🩷</div>
+                    </div>
+                );
+            };
+            
+            // Theme selector buttons
+            const themesList = [
+                { id: 'softCute', label: 'Soft Cute', icon: '🌸', color: 'bg-pink-100' },
+                { id: 'luxury', label: 'Luxury Romance', icon: '💎', color: 'bg-amber-900' },
+                { id: 'anime', label: 'Anime Aesthetic', icon: '🎀', color: 'bg-rose-200' },
+                { id: 'minimal', label: 'Minimal Clean', icon: '🌿', color: 'bg-stone-100' },
+                { id: 'cinematic', label: 'Cinematic Emotion', icon: '🎬', color: 'bg-indigo-950' }
+            ];
+            
+            // Mock Auth Modal
+            const AuthModal = () => {
+                if (!showAuthModal) return null;
+                return (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all" onClick={() => setShowAuthModal(false)}>
+                        <div className="bg-white/95 glass-card rounded-3xl max-w-md w-full p-8 shadow-2xl transform transition-all" onClick={e => e.stopPropagation()}>
+                            <div className="text-center mb-6">
+                                <i className="fas fa-heart text-4xl text-rose-500"></i>
+                                <h3 className="text-2xl font-bold mt-2">Welcome to HeartVibe</h3>
+                                <p className="text-gray-500">Sign in to save your love letters & unlock premium</p>
+                            </div>
+                            <div className="space-y-4">
+                                <input type="email" placeholder="Email address" className="w-full p-3 rounded-xl border border-gray-200 focus:outline-rose-300" />
+                                <input type="password" placeholder="Password" className="w-full p-3 rounded-xl border border-gray-200" />
+                                <button className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white py-3 rounded-xl font-semibold">Sign In / Sign Up</button>
+                                <p className="text-xs text-center text-gray-400">Demo concept — romantic journey starts here</p>
+                            </div>
+                            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-gray-400"><i className="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                );
+            };
+            
+            // Premium Upgrade Section
+            const PremiumCard = () => (
+                <div className="bg-gradient-to-br from-amber-50/90 to-pink-50/90 backdrop-blur-sm rounded-2xl p-5 mt-6 border border-pink-200 shadow-md">
+                    <div className="flex items-center justify-between flex-wrap">
+                        <div>
+                            <h4 className="font-bold text-rose-700 flex items-center gap-2"><i className="fas fa-crown text-amber-500"></i> HeartVibe Premium</h4>
+                            <p className="text-sm text-gray-600">Unlock 20+ themes, HD photo albums, AI voice messages & love calendar.</p>
+                        </div>
+                        <button className="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-lg transition-all">Upgrade now →</button>
+                    </div>
+                    <div className="flex gap-3 mt-3 text-xs text-rose-600">
+                        <span>✨ Unlimited AI messages</span>
+                        <span>💾 Export as website</span>
+                        <span>🎨 Exclusive cinematic filters</span>
+                    </div>
+                </div>
+            );
+            
+            return (
+                <div className="min-h-screen w-full overflow-x-hidden">
+                    <FloatingHearts />
+                    <AuthModal />
+                    {/* Header */}
+                    <header className="sticky top-0 z-40 glass-card shadow-lg backdrop-blur-xl bg-white/30 border-b border-white/40">
+                        <div className="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center flex-wrap gap-3">
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-heart text-3xl text-rose-500 animate-pulse"></i>
+                                <span className="font-bold text-xl bg-gradient-to-r from-rose-600 to-pink-500 bg-clip-text text-transparent">HeartVibe AI</span>
+                                <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full ml-2">✨ romantic studio</span>
+                            </div>
+                            <div className="flex gap-3 items-center">
+                                <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 rounded-full bg-white/60 hover:bg-white text-rose-700 font-medium transition-all shadow-sm"><i className="fas fa-user mr-1"></i> Login</button>
+                                <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 rounded-full bg-rose-600 text-white font-medium shadow-md hover:bg-rose-700 transition-all"><i className="fas fa-heart"></i> Sign Up</button>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+                        <div className="grid lg:grid-cols-2 gap-8">
+                            {/* LEFT: CONFIGURATION PANEL (glassmorphism) */}
+                            <div className="space-y-6">
+                                <div className="glass-card p-6 rounded-3xl bg-white/40 shadow-xl">
+                                    <h2 className="text-2xl font-bold text-rose-700 flex items-center gap-2"><i className="fas fa-magic"></i> Customize your romance</h2>
+                                    <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-rose-800">Your Name</label>
+                                            <input type="text" value={myName} onChange={(e) => setMyName(e.target.value)} className="w-full p-2 rounded-xl border border-rose-200 bg-white/80 focus:ring-2 focus:ring-rose-300" placeholder="Your name" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-rose-800">Partner's Name</label>
+                                            <input type="text" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} className="w-full p-2 rounded-xl border border-rose-200 bg-white/80" />
+                                        </div>
+                                    </div>
+                                    <div className="mt-3">
+                                        <label className="block text-sm font-medium text-rose-800">Love Message (editable)</label>
+                                        <textarea rows="3" value={message} onChange={(e) => setMessage(e.target.value)} className="w-full p-3 rounded-xl border border-rose-200 bg-white/80 resize-none"></textarea>
+                                        <button onClick={triggerAIGeneration} className="mt-2 bg-gradient-to-r from-purple-400 to-pink-400 text-white px-4 py-2 rounded-full text-sm flex items-center gap-2 shadow-md hover:scale-105 transition"><i className="fas fa-robot"></i> ✨ AI Romantic Message ✨</button>
+                                    </div>
+                                    <div className="mt-3 grid sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium">Anniversary Date</label>
+                                            <input type="date" value={anniversary} onChange={(e) => setAnniversary(e.target.value)} className="w-full p-2 rounded-xl border border-rose-200" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium">Upload Photos (memories)</label>
+                                            <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} className="text-sm w-full file:mr-2 file:py-1 file:px-3 file:rounded-full file:bg-rose-100" />
+                                            {photos.length > 0 && <div className="flex flex-wrap gap-2 mt-2"><span className="text-xs">{photos.length} photo(s)</span><button onClick={() => setPhotos([])} className="text-xs text-red-500">clear</button></div>}
+                                        </div>
+                                    </div>
+                                    <div className="mt-4">
+                                        <label className="block text-sm font-medium">Special Memories</label>
+                                        <textarea rows="2" value={memories} onChange={(e) => setMemories(e.target.value)} className="w-full p-2 rounded-xl border border-rose-200" placeholder="share your memories..."></textarea>
+                                    </div>
+                                </div>
+                                
+                                {/* Theme Selection System */}
+                                <div className="glass-card p-5 rounded-3xl bg-white/40">
+                                    <h3 className="font-semibold text-rose-700 mb-3"><i className="fas fa-palette"></i> Select Theme Vibe</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                        {themesList.map(theme => (
+                                            <button key={theme.id} onClick={() => setSelectedTheme(theme.id)} className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 ${selectedTheme === theme.id ? 'ring-2 ring-rose-500 bg-rose-50 shadow-md' : 'bg-white/50 hover:bg-rose-50'} `}>
+                                                <span className="text-2xl">{theme.icon}</span>
+                                                <span className="text-xs font-medium">{theme.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Premium Upgrade section inside config */}
+                                <PremiumCard />
+                                <button onClick={oneClickGenerate} className="w-full bg-gradient-to-r from-rose-500 to-red-500 text-white py-4 rounded-2xl text-xl font-bold shadow-2xl transition-all hover:shadow-rose-300/50 flex items-center justify-center gap-2 group">
+                                    <i className="fas fa-globe"></i> One-Click Website Generation <i className="fas fa-heart group-hover:animate-ping"></i>
+                                </button>
+                            </div>
+                            
+                            {/* RIGHT: REAL-TIME PREVIEW + GENERATED WEBSITE */}
+                            <div className="space-y-4" id="livePreviewSection">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xl font-bold text-rose-700 flex gap-2"><i className="fas fa-eye"></i> Live romantic preview</h3>
+                                    <span className="text-xs bg-rose-100 px-3 py-1 rounded-full">✨ updates instantly</span>
+                                </div>
+                                {/* The generated love letter website preview */}
+                                <LovePreview />
+                                {/* Glow effect after generation */}
+                                {premiumGlow && <div className="fixed inset-0 pointer-events-none bg-white/20 backdrop-blur-sm z-50 flex items-center justify-center text-7xl font-bold text-rose-500 animate-pulse">💞 WEBSITE READY 💞</div>}
+                                <div className="text-center text-sm text-gray-500 flex justify-between mt-2">
+                                    <span><i className="fas fa-magic"></i> Editable placeholders + realtime sync</span>
+                                    <span><i className="fas fa-heartbeat"></i> animated text & floating hearts</span>
+                                </div>
+                                {/* Bonus download mock */}
+                                <div className="flex justify-end gap-2 mt-2">
+                                    <button className="bg-white/70 text-rose-600 px-4 py-2 rounded-xl shadow text-sm border"><i className="fas fa-download"></i> Export as image (premium)</button>
+                                </div>
+                            </div>
+                        </div>
+                        {/* extra romantic decorative section */}
+                        <div className="mt-12 text-center pb-8">
+                            <div className="inline-block bg-white/40 backdrop-blur rounded-full px-6 py-2 text-rose-600 text-sm shadow-sm"><i className="fas fa-music mr-1"></i> “Your story, designed with AI romance”</div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+        
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+</body>
+</html>
